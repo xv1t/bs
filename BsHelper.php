@@ -3,7 +3,7 @@
  * Bootstrap Helper
  * testing Bootstrap: 3.3.4
  * 
- * version: 2015-04-10
+ * version: 2015-04-11
  */
 
 //define constants
@@ -21,6 +21,9 @@ define('BOOTSTRAP_SIZE_DEFAULT', '');
 define('BOOTSTRAP_SIZE_SMALL', 'sm');
 define('BOOTSTRAP_SIZE_EXTRA_SMALL', 'xs');
 
+define('BOOTSTRAP_TOP', 'top');
+define('BOOTSTRAP_BOTTOM', 'bottom');
+
 define('BOOTSTRAP_STATE_ACTIVE', 'active');
 define('BOOTSTRAP_STATE_DISABLED', 'disabled');
 
@@ -30,7 +33,8 @@ class BsHelper extends AppHelper {
     var $helpers = array(
         'Html',
         'Form',
-        'Js'
+        'Js',
+        'Paginator'
     );
     /**
      * 
@@ -43,26 +47,26 @@ class BsHelper extends AppHelper {
     private function contextualClasses($options, $tagName = null){
         if (!empty($options['text']))
         {
-            $options = $this->Html->addClass($options, 'text-' . $options['text']);
+            $options = $this->addClass($options, 'text-' . $options['text']);
             unset($options['text']);
         }
         
         if (!empty($options['bg']))
         {
-            $options = $this->Html->addClass($options, 'bg-' . $options['bg']);
+            $options = $this->addClass($options, 'bg-' . $options['bg']);
             unset($options['bg']);
         }
 
         if ($this->hasClass($options, 'btn-group')){
             if (isset($options['sized'])){
-                $options = $this->Html->addClass($options, 'btn-group-' . $options['sized']);
+                $options = $this->addClass($options, 'btn-group-' . $options['sized']);
                 unset($options['sized']);
             }
         }
 
         if ($this->hasClass($options, 'btn-group-vertical')){
             if (isset($options['sized'])){
-                $options = $this->Html->addClass($options, 'btn-group-' . $options['sized']);
+                $options = $this->addClass($options, 'btn-group-' . $options['sized']);
                 unset($options['sized']);
             }
         }
@@ -70,7 +74,7 @@ class BsHelper extends AppHelper {
         if ($this->hasClass($options, 'panel')){
             if (!empty($options['styled']))
             {
-                $options = $this->Html->addClass($options, 'panel-' . $options['styled']);
+                $options = $this->addClass($options, 'panel-' . $options['styled']);
                 unset($options['styled']);
             }            
         }
@@ -78,7 +82,15 @@ class BsHelper extends AppHelper {
         if ($tagName == 'span' && $this->hasClass($options, 'label')){
             if (isset($options['styled']))
             {
-                $options = $this->Html->addClass($options, 'label-' . $options['styled']);
+                $options = $this->addClass($options, 'label-' . $options['styled']);
+                unset($options['styled']);
+            }
+        }
+        
+        if ($this->hasClass($options, 'alert')){
+            if (isset($options['styled']))
+            {
+                $options = $this->addClass($options, 'alert-' . $options['styled']);
                 unset($options['styled']);
             }
         }
@@ -86,29 +98,44 @@ class BsHelper extends AppHelper {
         if ($tagName == 'span' && $this->hasClass($options, 'badge')){
             if (isset($options['styled']))
             {
-                $options = $this->Html->addClass($options, 'badge-' . $options['styled']);
+                $options = $this->addClass($options, 'badge-' . $options['styled']);
                 unset($options['styled']);
             }
         }
         
+        if ($tagName == 'a'){
+            if (empty($options['href']))
+                $options['href'] = '#';
+        }
+        
         if ($tagName == 'p'){
             if (!empty($options['lead'])){
-                $options = $this->Html->addClass($options, 'lead');
+                $options = $this->addClass($options, 'lead');
                 unset($options['lead']);
             }
+        }
+        
+        if ($this->hasClass($options, 'pagination')){
+            if (isset($options['sized']))
+            {
+                $options = $this->addClass($options, 'pagination-' . $options['sized']);
+                unset($options['sized']);
+              //  debug($options);
+            }
+
         }
         
         if ($this->hasClass($options, 'btn')){
             if (isset($options['sized']))
             {
-                $options = $this->Html->addClass($options, 'btn-' . $options['sized']);
+                $options = $this->addClass($options, 'btn-' . $options['sized']);
                 unset($options['sized']);
               //  debug($options);
             }
             
             if (isset($options['styled']))
             {
-                $options = $this->Html->addClass($options, 'btn-' . $options['styled']);
+                $options = $this->addClass($options, 'btn-' . $options['styled']);
                 unset($options['styled']);
             }
         }
@@ -123,49 +150,29 @@ class BsHelper extends AppHelper {
         return in_array($class, explode(' ', $options['class']));
     }
 
-    /**
-     * 
-     * $body, 
-     * $title = null, 
-     * $footer = null
-     * 
-     * Bw::panel('Text');
-     * <div class="panel panel-default">
-     *    <div class="panel-body">Text</div>
-     * </div>
-     * 
-     * Bs::panel('Text', 'Title');
-     * <div class="panel panel-default">
-     *    <div class="panel-heading">
-     *      <h3 class="panel-title">Title</h3>
-     *    </div>
-     *    <div class="panel-body">Text</div>
-     * </div>
-     * 
-     * Bs::panel('Text', 'Title', 'Footer');
-     * <div class="panel panel-default">
-     *    <div class="panel-heading">
-     *      <h3 class="panel-title">Title</h3>
-     *    </div>
-     *    <div class="panel-body">Text</div>
-     *    <div class="panel-footer">Footer</div>
-     * </div>
-     * 
-     * Bs::panel(array(
-     *          'title' => array(
-     *                  'h1',
-     *                  'Title',
-     *                  array('class' => 'text-success')
-     *              )
-     *          'body' => array('Body text', array('class' => 'text-danger')),
-     *          'footer' => array('Footer text', array('class' => 'text-info')),
-     *      ), array(
-     *          'id' => 'my_uid_234534hg345',
-     *          'class' => 'panel-primary'
-     *      ));
-     * 
-     * 
-     */
+    public function pagination($pagination_options = array()){
+        
+         $pagination_content = $this->Paginator->numbers(array(
+           // 'model' => $modelName,
+            'tag' => 'li',
+            'separator' => null,
+            'currentTag' => 'a',
+            'currentClass' => 'active',
+            'first' => 1,
+            'last' => 1,
+            'ellipsis' => null,
+        ));
+         
+         $pagination_options = $this->addClass($pagination_options, 'pagination');
+         
+         return $this->tag('nav',
+                 $this->ul(
+                         $pagination_content,
+                         $pagination_options
+                      )
+                 );
+    }
+    
     public function panel($body, $title = null, $footer = null) {
 
         $_options = array(
@@ -194,7 +201,7 @@ class BsHelper extends AppHelper {
         /*
          * main panel options
          */
-        $panel_options = $this->Html->addClass($panel_options, 'panel panel-default');
+        $panel_options = $this->addClass($panel_options, 'panel panel-default');
 
         $panel_heading = $panel_body = $panel_footer = null;
 
@@ -219,7 +226,7 @@ class BsHelper extends AppHelper {
 
         if (is_array($_options['body']))
             $panel_body = $this->div(
-                    $_options['body'][0], $this->Html->addClass($_options['body'][1], 'panel-body')
+                    $_options['body'][0], $this->addClass($_options['body'][1], 'panel-body')
             );
 
         if (is_string($_options['footer']))
@@ -229,7 +236,7 @@ class BsHelper extends AppHelper {
 
         if (is_array($_options['footer']))
             $panel_footer = $this->div(
-                    $_options['footer'][0], $this->Html->addClass($_options['footer'][1], 'panel-footer')
+                    $_options['footer'][0], $this->addClass($_options['footer'][1], 'panel-footer')
             );
 
         return $this->div(
@@ -253,13 +260,27 @@ class BsHelper extends AppHelper {
         );
     }
 
+    public function jumbotron($title, $content, $button){
+        
+        
+        return $this->div(
+                
+                );
+        /*
+<div class="jumbotron">
+  <h1>Hello, world!</h1>
+  <p>...</p>
+  <p><a class="btn btn-primary btn-lg" href="#" role="button">Learn more</a></p>
+</div>
+         */
+    }
     public function icon($icon, $options = array()){
         if (is_string($icon))
-            $options = $this->Html->addClass($options, $icon);
+            $options = $this->addClass($options, $icon);
         
         if (strpos($options['class'], 'fa-') !== false)
              if (!$this->hasClass($options, 'fa'))   
-               $options = $this->Html->addClass($options, 'fa');      
+               $options = $this->addClass($options, 'fa');      
         
         
         
@@ -270,6 +291,257 @@ class BsHelper extends AppHelper {
         return $this->tag('i', '', $options);
     }
     
+    /*
+     * Check array
+     * tag properties or custom user array
+     */
+    public function is_tag($options = array()){
+        if (!is_array($options))
+            return false;
+        
+        /*
+         * check numeric array or associative
+         */
+        
+        if (!empty($options[0]))
+            return false;
+        
+        /*
+         * More popular tag's attributes
+         */
+        $attrs = array(
+            'href', 'class', 'id', 'type', 'role', 'name', 'style', 'data-toggle'            
+        );
+        
+        return (bool) array_intersect(array_keys($options), $attrs);
+    }
+    
+    /*
+     * Check string - is clear text or <tagged> exists
+     */
+    private function no_tags($string){
+        return
+            strpos($string, '>') === false &&
+            strpos($string, '<') === false;
+    }
+    
+    public function navbar($options){
+        
+        $navbar_header = $navbar_content = $navbar_content_right = null;
+        
+        if (empty($options['id']))
+            $options['id'] = 'navbar-collapse-' . uniqid ();
+        
+        if (isset($options['header'])){
+            
+            $options['header']['toggle'] = isset($options['header']['toggle'])
+                    ? $options['header']['toggle']
+                    : true;
+            
+            $options['header']['brand'] = isset($options['header']['brand'])
+                    ? $options['header']['brand']
+                    : false;
+            
+            $header_toggle_content = $header_brand_content = null;
+            
+            if ($options['header']['toggle']){
+                if (empty($options['header']['toggle_title']))
+                    $options['header']['toggle_title'] = 'Toggle navigation';
+                
+                $header_toggle_content = $this->tag('button',
+                        $this->span($options['header']['toggle_title'], 'sr-only') .
+                        $this->icon('icon-bar') .
+                        $this->icon('icon-bar') .
+                        $this->icon('icon-bar'),
+                        array(
+                            'type'=>"button" ,
+                            'class'=>"navbar-toggle collapsed" ,
+                            'data-toggle'=>"collapse" ,
+                            'data-target'=>"#" . $options['id'],
+                        ));
+            }
+            
+            if ($options['header']['brand']){
+                if (is_string($options['header']['brand'])){
+                    if ($this->no_tags($options['header']['brand'])){
+                        
+                        $header_brand_icon = null;
+                        if (!empty($options['header']['icon']))
+                            $header_brand_icon .= $this->icon($options['header']['icon']). ' ';
+                        
+                        if (!empty($options['header']['image']))
+                             $header_brand_icon .= $options['header']['image'];   
+                        
+                        $header_brand_options = array(
+                            'class' => 'navbar-brand',
+                            'href' => empty($options['header']['href'])
+                                ? '#'
+                                : $options['header']['href']
+                                
+                        );
+                        
+                        $header_brand_content = $this->tag(
+                                'a', 
+                                $header_brand_icon .
+                                $options['header']['brand'], 
+                                $header_brand_options);
+                    } else {
+                        $header_brand_content = $options['header']['brand'];
+                    }
+                }
+                if (is_array($options['header']['brand'])){
+                    $brand_options = array();
+                    
+                    $brand_title = $options['header']['brand'][0];
+                    
+                    if (!empty($options['header']['brand'][1]))
+                        $brand_options = $options['header']['brand'][1];
+                    
+                    $brand_options = $this->addClass('navbar-brand');                   
+                    
+                    
+                    $header_brand_content = $this->tag(
+                            'a', 
+                            $brand_title, 
+                            $brand_options
+                            );
+                }
+            }
+            
+            $navbar_header = $this->div(
+                    $header_toggle_content . 
+                    $header_brand_content,
+                    'navbar-header'
+                    );
+        } //header        
+            
+       
+            
+        $navbar_options = array();
+        $navbar_options = $this->addClass($navbar_options, 'navbar navbar-default');
+        if (!isset($options['content']))
+            $options['content'] = false;
+        
+        /*
+         * content
+         */
+        
+        if (is_string($options['content'])){
+            if ( $this->no_tags($options['content']))
+                $navbar_content = $this->tag('p', $options['content'], 'navbar-text');
+            else 
+                $navbar_content = 
+                    $this->li($options['content']);
+        } else {
+            if (is_array($options['content'])){
+                /*
+                 * content items
+                 */
+                $tmp_content = null;
+                foreach ($options['content'] as $item0 => $item0_options){
+                    
+                    if (is_numeric($item0) && is_string($item0_options)){
+                        $tmp_content .= $this->li($item0_options);
+                    }
+                    
+                    if (is_string($item0) && is_string($item0_options)){
+                        /*
+                         * title => href
+                         */
+                        $tmp_content .= $this->li(
+                                $this->a(
+                                        $item0,
+                                        array(
+                                            'href' => $item0_options
+                                        )
+                                    )
+                                );
+                    }
+                    
+                    if (is_string($item0) && is_array($item0_options)){
+                        if ($this->is_tag($item0_options)){
+                            /*
+                             * title => array(options)
+                             */
+                            
+                            $icon = null;
+                            
+                            if (isset($item0_options['icon']))
+                            {
+                                $icon = $this->icon($item0_options['icon']) . ' ';
+                                unset($item0_options['icon']);
+                            }
+                            
+                            $tmp_content .= $this->li(
+                                $this->a(
+                                        $icon . $item0,
+                                        $item0_options
+                                        
+                                    )
+                                );
+                        } else {
+                            /*
+                             * Drop down menu
+                             */
+                            $tmp_content .= $this->li(
+                                    $this->dropdown($item0, $item0_options,  false, array('tag' => 'a', 'btn' => false))
+                                    , 'dropdown');
+                        }
+                    }
+                }
+                $navbar_content = $tmp_content;
+            }
+        }
+        
+        $padding = isset($options['padding']) ? $options['padding'] : 70;
+        
+        if (isset($options['fixed'])) {            
+            $navbar_options = $this->addClass($navbar_options, 'navbar-fixed-' . $options['fixed']);
+            if ($padding !== false) {
+                $this->_View->start('css');
+                if ($options['fixed'] == 'top')                    
+                    echo "<style>body{padding-top: {$padding}px}</style>";
+                if ($options['fixed'] == 'bottom')                    
+                    echo "<style>body{padding-bottom: {$padding}px}</style>";
+                $this->_View->end();    
+                
+            }
+        } 
+        
+        if (isset($options['inverse'])) {            
+            if ($options['inverse'] === true)
+                $navbar_options = $this->addClass($navbar_options, 'navbar-inverse');
+        } else 
+            $navbar_options = $this->addClass($navbar_options, 'navbar-default');
+        
+        if (isset($options['static'])) {            
+            $navbar_options = $this->addClass($navbar_options, 'navbar-static-' . $options['static']);
+        } 
+          
+        if ($navbar_content)
+            $navbar_content = $this->ul($navbar_content, 'nav navbar-nav');
+          
+        if ($navbar_content_right)
+            $navbar_content_right = $this->ul($navbar_content_right, 'nav navbar-nav navbar-right');
+        
+        return $this->tag('nav',
+                $this->div(
+                        $navbar_header .
+                        $this->div(
+                               $navbar_content .
+                               $navbar_content_right
+                                ,
+                                array(
+                                    'id' => $options['id'],
+                                    'class' => 'collapse navbar-collapse'
+                                )
+                             ),
+                        
+                        'container-fluid'                       
+                     ),
+                $navbar_options
+                );
+    }
     /**
      * 
      * @param type $tabs
@@ -340,20 +612,20 @@ class BsHelper extends AppHelper {
             ) + $tab['a'];
             
                 if (!empty($container_options['fade']))
-                    $tab['pane'] = $this->Html->addClass($tab['pane'], 'fade');
+                    $tab['pane'] = $this->addClass($tab['pane'], 'fade');
                 
             if (!empty($tab['active']))
             {
-                $tab['li'] = $this->Html->addClass($tab['li'], 'active');
-                $tab['pane'] = $this->Html->addClass($tab['pane'], 'active');
+                $tab['li'] = $this->addClass($tab['li'], 'active');
+                $tab['pane'] = $this->addClass($tab['pane'], 'active');
                 
                 if (!empty($container_options['fade']))
-                    $tab['pane'] = $this->Html->addClass($tab['pane'], 'in');
+                    $tab['pane'] = $this->addClass($tab['pane'], 'in');
             }
             
             $tab['pane']['id'] = $tab['id'];
             $tab['pane']['role'] = 'tabpanel';
-            $tab['pane'] = $this->Html->addClass($tab['pane'], 'tab-pane');
+            $tab['pane'] = $this->addClass($tab['pane'], 'tab-pane');
 
             $navtabs_content .= $this->tag(
                     'li',
@@ -386,8 +658,8 @@ class BsHelper extends AppHelper {
         if (!empty($container_options['fade']))
             unset($container_options['fade']);
         
-        $navtab_options = $this->Html->addClass($navtab_options, 'nav nav-tabs');
-        $tab_content_options = $this->Html->addClass($tab_content_options, 'tab-content');
+        $navtab_options = $this->addClass($navtab_options, 'nav nav-tabs');
+        $tab_content_options = $this->addClass($tab_content_options, 'tab-content');
 
         $container_options['role'] = 'tabpanel';
         
@@ -410,20 +682,31 @@ class BsHelper extends AppHelper {
         );
     }
 
-    public function tag($tagName, $content = null, $options) {
+    public function tag($tagName, $content = null, $options = array()) {
+
+        
+        if ($options === false)
+        {
+            return $content;
+        }        
 
         if (!isset($options['escape']))
-            $options['escape'] = false;
+            $options['escape'] = false;        
+        
+        if (is_string($options))
+            $options = array(
+                'class' => $options
+            );
 
         return $this->Html->tag($tagName, $content, $this->contextualClasses($options, $tagName));
     }
 
     
-    private function a($content = null, $options) {
+    private function a($content = null, $options = array()) {
         return $this->tag('a', $content, $options);
     }
     
-    private function li($content = null, $options) {
+    private function li($content = null, $options = array()) {
         return $this->tag('li', $content, $options);
     }
     
@@ -434,14 +717,14 @@ class BsHelper extends AppHelper {
             $type = 'default';
         }
         $options['styled'] = $type;
-        $options = $this->Html->addClass($options, 'label');
+        $options = $this->addClass($options, 'label');
         
         return $this->tag('span', $content, $options);
     }
     
     public function badge($content, $options = array()){
 
-        $options = $this->Html->addClass($options, 'badge');        
+        $options = $this->addClass($options, 'badge');        
         return $this->tag('span', $content, $options);
     }
     
@@ -449,14 +732,25 @@ class BsHelper extends AppHelper {
         return $this->tag('ul', $content, $options);
     }
 
-    private function div($content = null, $options) {
+    private function span($content = null, $options) {
+        return $this->tag('span', $content, $options);
+    }
+
+    private function div($content = null, $options = array()) {
         return $this->tag('div', $content, $options);
     }
     
      
     public function button($title, $btn_options = array()){
        
-        $btn_options = $this->Html->addClass($btn_options, 'btn');
+        $btn = true;
+        if (isset($btn_options['btn']))
+        {
+            $btn = $btn_options['btn'];
+            unset($btn_options['btn']);
+        }
+        if ($btn) 
+            $btn_options = $this->addClass($btn_options, 'btn');
         
         if (empty($btn_options['styled']))
             $btn_options['styled'] = 'default';
@@ -483,7 +777,7 @@ class BsHelper extends AppHelper {
 
                             break;
                         case 'active':
-                            $btn_options = $this->Html->addClass($btn_options, 'active');
+                            $btn_options = $this->addClass($btn_options, 'active');
 
                             break;
 
@@ -494,7 +788,7 @@ class BsHelper extends AppHelper {
                     break;
 
                 default:
-                    $btn_options = $this->Html->addClass($btn_options, $btn_options['state']);
+                    $btn_options = $this->addClass($btn_options, $btn_options['state']);
                     break;
             }
             unset($btn_options['state']);
@@ -519,7 +813,7 @@ class BsHelper extends AppHelper {
                 $content .= $this->btn_group($buttons, $btn_group_options);
             }
         
-        $btn_toolbar_options = $this->Html->addClass($btn_toolbar_options, 'btn-toolbar');
+        $btn_toolbar_options = $this->addClass($btn_toolbar_options, 'btn-toolbar');
         
         return $this->div($content, $btn_toolbar_options);
     }
@@ -570,12 +864,14 @@ class BsHelper extends AppHelper {
          }
          
          
-         $btn_group_options['role'] = 'group';
-         
-         if (!empty($btn_group_options['vertical']))
-             $btn_group_options = $this->Html->addClass($btn_group_options, 'btn-group-vertical');
-         else
-             $btn_group_options = $this->Html->addClass($btn_group_options, 'btn-group');
+         if (is_array($btn_group_options)){
+            $btn_group_options['role'] = 'group';
+
+            if (!empty($btn_group_options['vertical']))
+                $btn_group_options = $this->addClass($btn_group_options, 'btn-group-vertical');
+            else
+                $btn_group_options = $this->addClass($btn_group_options, 'btn-group');
+         }
          
          if (!$buttons_content)
              return null;
@@ -584,19 +880,54 @@ class BsHelper extends AppHelper {
                  $buttons_content,
                  $btn_group_options
                  );
-        
-        
+    }
+    
+    public function addClass($options, $class){
+        return $this->Html->addClass($options, $class);
     }
 
+    public function alert($content, $type = 'warning', $options = array()){
+
+        $options = $this->addClass($options, 'alert');
+        $options['role'] = 'alert';
+        $close_button = null;
+        
+        if (empty($options['styled']))
+            $options['styled'] = $type;
+        
+        if (!empty($options['close'])){
+            $options = $this->addClass($options, 'alert-dismissible');
+            $close_button = $this->tag('button', 
+                    $this->span('&times', array(
+                        'aria-hidden' => 'true'
+                    ))
+                    , array(
+                'class' => 'close',
+                'type' => 'button',
+                'data-dismiss' => 'alert',
+                'aria-label' => 'Close'
+            ));
+            unset($options['close']);
+        }
+        
+        return $this->div($close_button . $content, $options);
+    }
 
     public function dropdown($title, $items, $dropdown_options = array(), $button_options = array(), $ul_options = array()){
         $button_content = null;
         $_items = array();
         
-        if (empty($button_options['class']))
-            $button_options = $this->Html->addClass($button_options, 'btn btn-default');
+        $btn = true;
         
-        $button_options = $this->Html->addClass($button_options, 'dropdown-toggle');
+        if (isset($button_options['btn']))
+        {
+            $btn = $button_options['btn'];
+        }
+        
+        if (empty($button_options['class']) && $btn)
+            $button_options = $this->addClass($button_options, 'btn btn-default');
+        
+        $button_options = $this->addClass($button_options, 'dropdown-toggle');
         
         $button_options = $button_options + array(
             'type' => 'button',
@@ -604,15 +935,16 @@ class BsHelper extends AppHelper {
             'aria-expanded'=>"true"
         );
         
-        $ul_options = $this->Html->addClass($ul_options, 'dropdown-menu');
+        $ul_options = $this->addClass($ul_options, 'dropdown-menu');
         $ul_options = $ul_options + array(
             'role' => 'menu'
                 
         );
 
-        if (empty($dropdown_options['class']))
+        
+        if (is_array($dropdown_options))
         {         
-            $dropdown_options = $this->Html->addClass($dropdown_options, 'dropdown');  
+            $dropdown_options = $this->addClass($dropdown_options, 'dropdown');  
         }
         
             foreach ($items as $one => $two){
@@ -653,31 +985,17 @@ class BsHelper extends AppHelper {
                 
                 if (!empty($item['divider']))
                     $item['li']['class'] = 'divider';
-                
-                $_items[] = $this->li(
-                    !empty($item['divider'])
-                        ? ''
-                        : $this->a(
-                            $item['title'],
-                            $item['a']),
-                    $item['li']
-                    );
+                if ($two !== false)
+                        $_items[] = $this->li(
+                            !empty($item['divider'])
+                                ? ''
+                                : $this->a(
+                                    $item['title'],
+                                    $item['a']),
+                            $item['li']
+                            );
           }
-        
-          if (!empty($dropdown_options['btn-group']))              
           
-                return
-                    implode(array(
-                        $this->button(                            
-                                //'button',
-                                $title .  ' <span class="caret"></span>',
-                                $button_options
-                                ),
-                        $this->ul(
-                                implode($_items),
-                                $ul_options
-                             )
-                    ));
           
         return $this->div(
             implode(array(
