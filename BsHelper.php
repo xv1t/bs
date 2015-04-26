@@ -3,7 +3,7 @@
  * Bootstrap Helper
  * testing Bootstrap: 3.3.4
  * 
- * version: 2015-04-11
+ * version: 2015-04-26
  */
 
 //define constants
