@@ -193,6 +193,19 @@ class BsHelper extends AppHelper {
             return $html;
     }
     
+    public function small($content, $options = array()){
+        return $this->tag('small', $content, $options);
+    }
+    
+    private function h($level = 2, $content, $options = array()){
+        
+        if (!empty($options['small'])){
+            $content .= ' ' . $this->tag('small', $options['small']);
+            unset($options['small']);
+        }
+        return $this->tag("h$level", $content, $options);
+    }
+    
     private function hasClass($options, $class){
         if (empty($options['class']))
             return false;
@@ -223,21 +236,25 @@ class BsHelper extends AppHelper {
                  );
     }
     
-    public function panel($body, $title = null, $footer = null) {
+    public function panel($body, $title = null, $footer = null, $panel_options = array()) {
 
         $_options = array(
             'title' => null,
             'body' => null,
             'footer' => null,
+            'toolbar' => null
         );
 
-        $panel_options = array();
+        //debug(compact('_options', 'panel_options', 'body', 'title', 'footer'));
 
         if (is_array($body))
             $_options = $body;
 
         if (is_array($title))
             $panel_options = $title;
+
+        if (is_array($footer))
+            $panel_options = $footer;
 
         if (is_string($title))
             $_options['title'] = $title;
@@ -248,18 +265,47 @@ class BsHelper extends AppHelper {
         if (is_string($footer))
             $_options['footer'] = $footer;
 
+        
+        
+        
         if (is_array($footer))
             $panel_options = $footer;
+        
 
+        if (isset($panel_options['options']))
+        {
+            $_options = $panel_options['options'] + $_options;
+            unset($panel_options['options']);
+        }        
+
+        //debug(compact('_options', 'panel_options'));
+        
         /*
          * main panel options
          */
         $panel_options = $this->addClass($panel_options, 'panel panel-default');
 
-        $panel_heading = $panel_body = $panel_footer = null;
+        $panel_heading = $panel_body = $panel_footer = $panel_toolbar = null;
 
+        /*
+         * toolbar
+         */
+        
+        if (isset($_options['toolbar'])){
+            if (is_string($_options['toolbar']))
+                $panel_toolbar = $_options['toolbar'];
+            else {
+                $panel_toolbar = $this->btn_group($_options['toolbar'], array(                    
+                    'right' => true,
+                    'sized' => BOOTSTRAP_SIZE_EXTRA_SMALL,
+                    'style' => 'margin-top: -5px; margin-right: -10px;'
+                ));
+            }
+        }        
+        
         if (is_string($_options['title']))
             $panel_heading = $this->div(
+                    $panel_toolbar .
                     $this->tag(
                             'h3', $_options['title'], array('class' => 'panel-title')
                     ), array(
@@ -268,7 +314,7 @@ class BsHelper extends AppHelper {
 
         if (is_array($_options['title']))
             $panel_heading = $this->div(
-                    $this->tagFromArray($_options['title']), array(
+                    $this->tagFromArray($_options['title']) . $panel_toolbar, array(
                 'class' => 'panel-heading')
             );
 
@@ -291,24 +337,26 @@ class BsHelper extends AppHelper {
             $panel_footer = $this->div(
                     $_options['footer'][0], $this->addClass($_options['footer'][1], 'panel-footer')
             );
+        
+
 
         return $this->div(
                         implode(array(
-                    empty($_options['before_heading']) ? null : $_options['before_heading'],
-                    empty($_options['before']['heading']) ? null : $_options['before']['heading'],
-                    $panel_heading,
-                    empty($_options['after_heading']) ? null : $_options['after_heading'],
-                    empty($_options['after']['heading']) ? null : $_options['after']['heading'],
-                    empty($_options['before_body']) ? null : $_options['before_body'],
-                    empty($_options['before']['body']) ? null : $_options['before']['body'],
-                    $panel_body,
-                    empty($_options['after_body']) ? null : $_options['after_body'],
-                    empty($_options['after']['body']) ? null : $_options['after']['body'],
-                    empty($_options['before_footer']) ? null : $_options['before_footer'],
-                    empty($_options['before']['footer']) ? null : $_options['before']['footer'],
-                    $panel_footer,
-                    empty($_options['after_footer']) ? null : $_options['after_footer'],
-                    empty($_options['after']['footer']) ? null : $_options['after']['footer'],
+                            empty($_options['before_heading']) ? null : $_options['before_heading'],
+                            empty($_options['before']['heading']) ? null : $_options['before']['heading'],
+                            $panel_heading,
+                            empty($_options['after_heading']) ? null : $_options['after_heading'],
+                            empty($_options['after']['heading']) ? null : $_options['after']['heading'],
+                            empty($_options['before_body']) ? null : $_options['before_body'],
+                            empty($_options['before']['body']) ? null : $_options['before']['body'],
+                            $panel_body,
+                            empty($_options['after_body']) ? null : $_options['after_body'],
+                            empty($_options['after']['body']) ? null : $_options['after']['body'],
+                            empty($_options['before_footer']) ? null : $_options['before_footer'],
+                            empty($_options['before']['footer']) ? null : $_options['before']['footer'],
+                            $panel_footer,
+                            empty($_options['after_footer']) ? null : $_options['after_footer'],
+                            empty($_options['after']['footer']) ? null : $_options['after']['footer'],
                         )), $panel_options
         );
     }
@@ -746,7 +794,12 @@ class BsHelper extends AppHelper {
         if ($options === false)
         {
             return $content;
-        }        
+        }
+        
+        if (is_string($options))
+            $options = array(
+                'class' => $options
+            );
 
         if (!isset($options['escape']))
             $options['escape'] = false;        
@@ -764,6 +817,10 @@ class BsHelper extends AppHelper {
         return $this->tag('a', $content, $options);
     }
     
+    public function close($tagName) {
+        return "</$tagName>";
+    }
+    
     public function list_group_item($content = null, $options = array()) {
         $options = $this->addClass($options, 'list-group-item');
         return $this->tag('li', $content, $options);
@@ -774,6 +831,7 @@ class BsHelper extends AppHelper {
         return $this->div($content, $options);
     }
     
+
     public function li($content = null, $options = array()) {
         return $this->tag('li', $content, $options);
     }
@@ -796,7 +854,7 @@ class BsHelper extends AppHelper {
         return $this->tag('span', $content, $options);
     }
     
-    private function ul($content = null, $options) {
+    public function ul($content = null, $options) {
         return $this->tag('ul', $content, $options);
     }
 
@@ -804,7 +862,7 @@ class BsHelper extends AppHelper {
         return $this->tag('span', $content, $options);
     }
 
-    private function div($content = null, $options = array()) {
+    public function div($content = null, $options = array()) {
         return $this->tag('div', $content, $options);
     }
     
