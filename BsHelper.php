@@ -27,6 +27,13 @@ define('BOOTSTRAP_BOTTOM', 'bottom');
 define('BOOTSTRAP_STATE_ACTIVE', 'active');
 define('BOOTSTRAP_STATE_DISABLED', 'disabled');
 
+define('BOOTSTRAP_COLUMN_1', 1);
+define('BOOTSTRAP_COLUMN_2', 2);
+define('BOOTSTRAP_COLUMN_3', 3);
+define('BOOTSTRAP_COLUMN_4', 4);
+define('BOOTSTRAP_COLUMN_6', 6);
+define('BOOTSTRAP_COLUMN_12', 12);
+
 App::uses('Helper', 'View');
 class BsHelper extends AppHelper {
 
@@ -36,6 +43,8 @@ class BsHelper extends AppHelper {
         'Js',
         'Paginator'
     );
+    
+    var $schema = array();
     /**
      * 
      * Apply contextual classes
@@ -56,12 +65,24 @@ class BsHelper extends AppHelper {
             $options = $this->addClass($options, 'bg-' . $options['bg']);
             unset($options['bg']);
         }
+        
+        if (!empty($options['active']))
+        {
+            $options = $this->addClass($options, 'active');
+            unset($options['active']);
+        }
 
         if ($this->hasClass($options, 'btn-group')){
             if (isset($options['sized'])){
                 $options = $this->addClass($options, 'btn-group-' . $options['sized']);
                 unset($options['sized']);
             }
+        }
+        
+        if (isset($options['right'])){
+            if ($options['right'])
+                $options = $this->addClass($options, 'pull-right');
+            unset($options['right']);
         }
 
         if ($this->hasClass($options, 'btn-group-vertical')){
@@ -115,6 +136,15 @@ class BsHelper extends AppHelper {
             }
         }
         
+        if ($tagName == 'i'){
+            if ($this->hasClass($options, 'fa')){
+                if (isset($options['styled'])){
+                    $options = $this->addClass($options, 'text-' . $options['styled']);
+                    unset($options['styled']);
+                }
+            }
+        }
+        
         if ($this->hasClass($options, 'pagination')){
             if (isset($options['sized']))
             {
@@ -141,6 +171,26 @@ class BsHelper extends AppHelper {
         }
         
         return $options;
+    }
+    
+    public function cols($elements = array(), $cols = 1, $options = array()){
+       for ($i = count($elements) - 1; $i >= 0; $i--)
+            if ($elements[$i] === false)
+                unset($elements[$i]);
+            
+            $rows = array_chunk($elements, $cols);
+            
+            $class_name = 'col-md-' . 12 / $cols;
+            $html = '';
+            foreach ($rows as $row){
+                $row_html = '';
+                foreach ($row as $el){
+                    $row_html .= $this->div($el, $class_name);
+                }
+                $html .= $this->row($row_html);
+            }
+            
+            return $html;
     }
     
     private function hasClass($options, $class){
@@ -197,6 +247,9 @@ class BsHelper extends AppHelper {
 
         if (is_string($footer))
             $_options['footer'] = $footer;
+
+        if (is_array($footer))
+            $panel_options = $footer;
 
         /*
          * main panel options
@@ -682,6 +735,11 @@ class BsHelper extends AppHelper {
         );
     }
 
+    public function thumbnail($content = null, $options = array()) {
+        $options = $this->Html->addClass($options, 'thumbnail');
+        return $this->tag('div', $content, $options);
+    }
+    
     public function tag($tagName, $content = null, $options = array()) {
 
         
@@ -706,7 +764,17 @@ class BsHelper extends AppHelper {
         return $this->tag('a', $content, $options);
     }
     
-    private function li($content = null, $options = array()) {
+    public function list_group_item($content = null, $options = array()) {
+        $options = $this->addClass($options, 'list-group-item');
+        return $this->tag('li', $content, $options);
+    }
+    
+    public function row($content = null, $options = array()) {
+        $options = $this->addClass($options, 'row');
+        return $this->div($content, $options);
+    }
+    
+    public function li($content = null, $options = array()) {
         return $this->tag('li', $content, $options);
     }
     
@@ -740,9 +808,121 @@ class BsHelper extends AppHelper {
         return $this->tag('div', $content, $options);
     }
     
+    public function input($fieldName, $options = array()){
+
+        
+        $field = $fieldName;
+        $model = $this->Form->defaultModel;
+        
+        if (strpos('.', $fieldName) !== false){
+            list($model, $field) = explode('.', $fieldName);
+        }
+        
+        if (empty($this->schema[$model]))
+            $this->schema[$model] = ClassRegistry::init($model)->schema();
+        
+        $comment = empty($this->schema[$model][$field]['comment']) ? false : $this->schema[$model][$field]['comment'];
+        
+        if ($comment)
+            $options['label'] = $comment;
+        
+        if (!isset($options['div']))
+             $options['div'] = array();
+        
+        $element_type = 'text';
+        
+        if (isset($options['options'])){
+            $element_type = 'select';
+        }
+        
+        if (!empty($this->schema[$model][$field]['type'])){
+            if ($this->schema[$model][$field]['type'] == 'boolean')
+                $element_type = 'checkbox';
+            if ($this->schema[$model][$field]['type'] == 'date')
+               $options['type'] = 'text';
+            
+        }
+        
+        
+
+        switch ($element_type) {
+            
+            case 'checkbox':
+                $options['div'] = false;
+                $options['label'] = false;
+                break;
+            case 'select':
+                $options = $this->addClass($options, 'form-control');
+              //  debug($options);
+
+                break;
+            default:
+                $options['div'] = $this->addClass($options['div'], 'form-group');
+                $options = $this->addClass($options, 'form-control');                
+                break;
+        }
+        
+                if (!empty($options['select2'])){
+                    $options = $this->addClass($options, 'hide form-control');
+                    $options['style'] = 'width: 100%';
+                }
+
+        $input_content = $this->Form->input($fieldName, $options);
+        
+        /*
+         * post process
+         */
+        
+        if (!empty($this->schema[$model][$field]['type']))
+        
+        switch ($this->schema[$model][$field]['type']) {
+            case 'date':
+                $input_content = str_replace('type="text"', 'type="date"',
+                                $input_content);
+
+                break;
+            case 'boolean':
+                
+                $input_content = $this->div(
+                        $this->tag('label',
+                                implode(array(
+                                    $input_content,
+                                    ' ',
+                                    $comment ? $comment : $fieldName
+                                ))
+                                ),
+                        'checkbox');
+                
+                break;
+
+            default:
+                break;
+        }
+        
+
+            
+        
+        return $input_content;
+    }
      
+    public function submit($title, $btn_options = array()){
+        
+        $btn_options['tag'] = 'button';
+        $btn_options['type'] = 'submit';
+        
+        if (empty($btn_options['styled']))
+            $btn_options['styled'] = BOOTSTRAP_STYLE_PRIMARY;
+        
+               
+        
+        return $this->button($title, $btn_options);
+    }
+    
+    public function clearfix(){
+        return $this->div('', 'clearfix');
+    }
+    
     public function button($title, $btn_options = array()){
-       
         $btn = true;
         if (isset($btn_options['btn']))
         {
