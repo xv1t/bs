@@ -3,7 +3,7 @@
  * Bootstrap Helper
  * testing Bootstrap: 3.3.4
  * 
- * version: 2015-04-26
+ * version: 2015-04-30
  */
 
 //define constants
@@ -789,6 +789,9 @@ class BsHelper extends AppHelper {
     }
     
     public function tag($tagName, $content = null, $options = array()) {
+        
+        if (is_array($content))
+            $content = implode ($content);
 
         
         if ($options === false)
@@ -872,7 +875,7 @@ class BsHelper extends AppHelper {
         $field = $fieldName;
         $model = $this->Form->defaultModel;
         
-        if (strpos('.', $fieldName) !== false){
+        if (strpos( $fieldName, '.') !== false){
             list($model, $field) = explode('.', $fieldName);
         }
         
@@ -994,6 +997,16 @@ class BsHelper extends AppHelper {
             $btn_options['styled'] = 'default';
 
         $tagName = 'div';
+        
+        if (!empty($btn_options['icon'])){
+        
+            if ($title)
+                $title .= $this->icon($btn_options['icon']) . '&nbsp;';
+            else
+                $title .= '&nbsp;' . $this->icon($btn_options['icon']) . '&nbsp;';
+            
+            unset($btn_options['icon']);
+        }
          
         if (isset($btn_options['tag']))
         {
@@ -1077,12 +1090,12 @@ class BsHelper extends AppHelper {
                  
                  if (is_numeric($one) && is_array($two)){
                      $button_title = 
-                             empty($two[0]) 
+                             !isset($two[0]) 
                                 ? null
                                 : $two[0];
                      
                      $button_options = 
-                             empty($two[1]) 
+                             !isset($two[1]) 
                                 ? null
                                 : $two[1];
                                 
@@ -1094,8 +1107,9 @@ class BsHelper extends AppHelper {
                     $button_options['href'] = $two;
                  }
                  
+                 //debug(compact('button_title', 'button_options', 'one', 'two'));
                  
-                 if ($button_options && $button_title)
+                 if ($button_options && $button_title !== null)
                      $buttons_content .= $this->button ($button_title, $button_options);
                      
              }
